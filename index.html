@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SpeechUp! — Mouth Training for Champions</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    min-height: 100%;
+    font-family: 'Comic Sans MS', 'Trebuchet MS', system-ui, sans-serif;
+    background: linear-gradient(135deg, #a8edea 0%, #8ec5fc 50%, #84fab0 100%);
+    color: #1a2a44;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+    min-height: 100vh;
+  }
+  .app {
+    width: 100%;
+    max-width: 540px;
+    background: rgba(255,255,255,0.55);
+    backdrop-filter: blur(8px);
+    border-radius: 24px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+    margin-top: 12px;
+  }
+  h1 { font-size: 1.8rem; text-align: center; margin-bottom: 8px; text-shadow: 2px 2px 0 rgba(255,255,255,0.6); }
+  h2 { font-size: 1.4rem; text-align: center; margin-bottom: 12px; }
+  p { text-align: center; line-height: 1.4; }
+
+  .btn {
+    display: block; width: 100%;
+    padding: 18px 20px; margin: 10px 0;
+    font-size: 1.2rem; font-weight: bold;
+    font-family: inherit;
+    border: none; border-radius: 16px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 5px 0 rgba(0,0,0,0.2);
+    color: #fff; text-align: center;
+  }
+  .btn:active:not(:disabled) {
+    transform: translateY(3px);
+    box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+  }
+  .btn-primary { background: linear-gradient(135deg, #ff6b35, #f7b733); }
+  .btn-secondary { background: linear-gradient(135deg, #1e90ff, #00b4db); }
+  .btn-success { background: linear-gradient(135deg, #11998e, #38ef7d); }
+  .btn-info { background: linear-gradient(135deg, #4776e6, #8e54e9); }
+  .btn-neutral { background: linear-gradient(135deg, #4b6cb7, #182848); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: 0 2px 0 rgba(0,0,0,0.2); }
+
+  .btn-row { display: flex; gap: 10px; }
+  .btn-row .btn { flex: 1; }
+
+  .ex-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin: 12px 0;
+  }
+  .ex-card {
+    background: rgba(255,255,255,0.7);
+    border: 3px solid rgba(255,255,255,0.9);
+    border-radius: 16px;
+    padding: 14px 10px;
+    text-align: center;
+    cursor: pointer;
+    color: #2d3a4a;
+    font-family: inherit;
+    font-weight: bold;
+    font-size: 1rem;
+    transition: transform 0.15s;
+    position: relative;
+  }
+  .ex-card:active { transform: scale(0.96); }
+  .ex-card .emoji { font-size: 2.2rem; display: block; margin-bottom: 6px; }
+  .ex-card.completed { background: rgba(150, 255, 180, 0.85); border-color: #51cf66; }
+  .ex-card.picked {
+    background: rgba(255, 215, 0, 0.85);
+    border-color: #ff9500;
+    transform: scale(1.03);
+    box-shadow: 0 4px 12px rgba(255,149,0,0.5);
+  }
+  .ex-card .check-badge {
+    position: absolute;
+    top: 4px; left: 6px;
+    font-size: 1.3rem;
+    color: #2d7a00;
+    font-weight: bold;
+  }
+  .ex-card .badge { position: absolute; top: 4px; right: 6px; font-size: 1.2rem; }
+
+  .progress-wrap {
+    width: 100%; max-width: 540px;
+    background: rgba(255,255,255,0.6);
+    border-radius: 12px; height: 14px;
+    overflow: hidden; margin-top: 8px;
+  }
+  .progress-bar {
+    height: 100%; background: linear-gradient(90deg, #ff6b35, #f7b733);
+    transition: width 0.4s ease; width: 0%;
+  }
+
+  /* Local MP4 video player - plays inline */
+  .local-video-wrap {
+    width: 100%;
+    border-radius: 16px;
+    overflow: hidden;
+    margin: 12px 0;
+    background: #000;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+  }
+  .local-video {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* Video controls: Play / Stop / Repeat */
+  .video-controls {
+    display: flex;
+    gap: 10px;
+    margin: 10px 0;
+  }
+  .vc-btn {
+    flex: 1;
+    padding: 14px 6px;
+    font-size: 1.6rem;
+    font-family: inherit;
+    font-weight: bold;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    color: #fff;
+    box-shadow: 0 5px 0 rgba(0,0,0,0.2);
+    line-height: 1.1;
+    transition: transform 0.1s;
+  }
+  .vc-btn span {
+    display: block;
+    font-size: 0.85rem;
+    margin-top: 2px;
+  }
+  .vc-btn:active {
+    transform: translateY(3px);
+    box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+  }
+  .vc-play { background: linear-gradient(135deg, #11998e, #38ef7d); }
+  .vc-stop { background: linear-gradient(135deg, #485563, #29323c); }
+  .vc-repeat { background: linear-gradient(135deg, #ff6b35, #f7b733); }
+
+  /* Rewind / Fast-forward row */
+  .scrub-controls {
+    display: flex;
+    gap: 10px;
+    margin: 6px 0;
+  }
+  .scrub-btn {
+    flex: 1;
+    padding: 10px;
+    font-size: 1.1rem;
+    font-family: inherit;
+    font-weight: bold;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    color: #fff;
+    background: rgba(0,0,0,0.25);
+    box-shadow: 0 3px 0 rgba(0,0,0,0.15);
+    transition: transform 0.1s;
+  }
+  .scrub-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.15);
+  }
+
+  /* Round counter - game scoreboard look */
+  .round-counter {
+    background: linear-gradient(135deg, #11998e, #38ef7d);
+    border-radius: 14px;
+    padding: 14px;
+    margin: 10px 0;
+    text-align: center;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(17,153,142,0.4);
+  }
+  .round-counter #roundLabel {
+    display: block;
+    font-size: 1.3rem;
+    font-weight: bold;
+    margin-bottom: 8px;
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+  }
+
+  /* Exercise header with info icon */
+  .exercise-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .info-btn {
+    background: rgba(255,255,255,0.7);
+    border: none;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  /* Info toast popup */
+  .info-toast {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .toast-content {
+    background: #fff;
+    color: #1a2a44;
+    border-radius: 18px;
+    padding: 24px;
+    max-width: 360px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  }
+  .toast-content p {
+    font-size: 1.1rem;
+    line-height: 1.4;
+    margin-bottom: 16px;
+  }
+  .toast-close {
+    background: linear-gradient(135deg, #11998e, #38ef7d);
+    color: #fff;
+    border: none;
+    font-size: 1.05rem;
+    font-weight: bold;
+    font-family: inherit;
+    padding: 12px 28px;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+  }
+
+  /* Daily counter on home screen */
+  .daily-counter {
+    background: linear-gradient(135deg, #ff6b35, #f7b733);
+    color: #fff;
+    border-radius: 14px;
+    padding: 12px 16px;
+    text-align: center;
+    margin: 10px 0;
+    box-shadow: 0 4px 12px rgba(255,107,53,0.4);
+  }
+  .dc-label {
+    font-size: 1rem;
+    margin-right: 6px;
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+  }
+  .dc-num {
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin: 0 4px;
+    text-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+  }
+  .dc-suffix {
+    font-size: 0.95rem;
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+  }
+
+  /* Streak badge */
+  .streak-badge {
+    background: linear-gradient(135deg, #845ec2, #d65db1);
+    color: #fff;
+    border-radius: 14px;
+    padding: 10px 16px;
+    text-align: center;
+    margin: 6px 0;
+    font-size: 1rem;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(132,94,194,0.4);
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+  }
+
+  /* Confetti animation */
+  .confetti-container {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 9999;
+  }
+  .confetti-piece {
+    position: absolute;
+    top: -20px;
+    width: 12px; height: 12px;
+    border-radius: 2px;
+    animation: confettiFall linear forwards;
+  }
+  @keyframes confettiFall {
+    0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(110vh) rotate(720deg); opacity: 0.7; }
+  }
+
+  .hint {
+    text-align: center;
+    font-size: 1rem;
+    background: rgba(255,215,0,0.4);
+    padding: 10px;
+    border-radius: 12px;
+    margin: 8px 0;
+  }
+
+  /* Tappable video thumbnail */
+  .video-thumb {
+    position: relative;
+    width: 100%;
+    border-radius: 16px;
+    overflow: hidden;
+    margin: 12px 0;
+    background: #000;
+    aspect-ratio: 16 / 9;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    transition: transform 0.15s;
+  }
+  .video-thumb:active { transform: scale(0.98); }
+  .video-thumb img {
+    width: 100%; height: 100%;
+    object-fit: cover; display: block;
+  }
+  .play-overlay {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.35);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 10px;
+  }
+  .play-circle {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff6b35, #f7b733);
+    color: #fff; font-size: 2.5rem;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+    padding-left: 6px;
+  }
+  .play-label {
+    color: #fff; font-weight: bold; font-size: 1.1rem;
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.8);
+  }
+
+  /* Fullscreen in-app video modal */
+  .video-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.95);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #fff;
+    padding: 8px 4px 12px;
+  }
+  .modal-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    flex: 1;
+    text-align: center;
+    padding: 0 12px;
+  }
+  .modal-close {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.2);
+    color: #fff;
+    font-size: 1.6rem;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .modal-video {
+    flex: 1;
+    width: 100%;
+    border: 0;
+    border-radius: 12px;
+    background: #000;
+  }
+
+  .timer-container { display: flex; justify-content: center; margin: 20px 0; }
+  .timer-circle { position: relative; width: 180px; height: 180px; }
+  .timer-circle svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+  .timer-circle .bg-ring { fill: none; stroke: rgba(255,255,255,0.6); stroke-width: 12; }
+  .timer-circle .progress-ring {
+    fill: none; stroke: #ff9500; stroke-width: 14;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s linear;
+  }
+  .timer-text {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 3rem; font-weight: bold;
+    text-shadow: 2px 2px 0 rgba(255,255,255,0.7);
+  }
+
+  .rounds { display: flex; justify-content: center; gap: 12px; margin: 12px 0; }
+  .round-dot {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.7);
+    border: 3px solid #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem; font-weight: bold;
+  }
+  .round-dot.done { background: #51cf66; }
+  .round-dot.active { background: #ffd43b; color: #2d3a4a; }
+
+  .exercise-info {
+    background: rgba(255,255,255,0.6);
+    border-radius: 12px;
+    padding: 14px;
+    margin: 10px 0;
+  }
+  .exercise-info p { font-size: 1.05rem; }
+
+  @keyframes pop {
+    0% { transform: scale(0.5); opacity: 0; }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .pop { animation: pop 0.5s ease; }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
+  }
+  .bounce { animation: bounce 1s ease infinite; }
+
+  .header-bar {
+    display: flex; justify-content: space-between;
+    align-items: center; width: 100%;
+    max-width: 540px; padding: 4px 8px;
+  }
+  .home-btn {
+    background: rgba(255,255,255,0.7);
+    border: none; color: #2d3a4a;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    font-size: 1.4rem; cursor: pointer;
+  }
+  /* Sound toggle in header */
+  .sound-btn {
+    background: rgba(255,255,255,0.7);
+    border: none; color: #2d3a4a;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    font-size: 1.4rem; cursor: pointer;
+  }
+  .step-label { font-weight: bold; text-shadow: 1px 1px 0 rgba(255,255,255,0.7); }
+
+  /* Build version badge */
+  .build-badge {
+    margin-top: 16px;
+    padding: 6px 12px;
+    background: rgba(0,0,0,0.3);
+    color: #fff;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-family: monospace;
+    opacity: 0.8;
+  }
+
+  @media (max-width: 380px) {
+    h1 { font-size: 1.5rem; }
+    .timer-circle { width: 150px; height: 150px; }
+    .timer-text { font-size: 2.4rem; }
+    .btn { font-size: 1.05rem; padding: 16px; }
+    .ex-card { font-size: 0.85rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header-bar">
+  <button class="home-btn" id="homeBtn" title="Home">🏠</button>
+  <div class="step-label" id="stepLabel"></div>
+  <button class="sound-btn" id="soundBtn" title="Toggle Sound">🔊</button>
+</div>
+<div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+
+<div class="app" id="app"></div>
+
+<div class="build-badge" id="buildBadge"></div>
+
+<script>
+/* ============================================
+   BUILD INFO
+   ============================================ */
+const BUILD_NUMBER = "v2.5";
+const BUILD_DATE = "Apr 14, 2026";
+
+/* ============================================
+   EXERCISE DATA
+   - localVideo: path to local MP4 (plays inline)
+   - videoId: YouTube fallback ID
+   ============================================ */
+const exercises = [
+  {
+    title: "Tongue Left / Right",
+    emoji: "👅",
+    description: "Use the tip of your tongue to touch each corner of your mouth slowly. Keep your jaw still.",
+    duration: 60,
+    rounds: 3,
+    localVideo: "videos/tongue-left-right.mp4",
+    videoId: "I1wyZki6KZo"
+  },
+  {
+    title: "Cheek Puffs",
+    emoji: "😊",
+    description: "Move air from cheek to cheek, then top lip, then bottom lip.",
+    duration: 60,
+    rounds: 3,
+    localVideo: "videos/Cheek-Puffs.mp4",
+    videoId: "o9pzBN4KXAY"
+  },
+  {
+    title: "Lip Trace",
+    emoji: "👄",
+    description: "Trace your lips slowly with your tongue. Do not move your jaw.",
+    duration: 60,
+    rounds: 3,
+    localVideo: "videos/Lip-Trace.mp4",
+    videoId: "4SNO61r4Nz8"
+  },
+  {
+    title: "Tongue in Cheek",
+    emoji: "😜",
+    description: "Press your tongue into each cheek while keeping your mouth closed.",
+    duration: 60,
+    rounds: 3,
+    localVideo: "videos/Tongue-in-Cheek.mp4",
+    videoId: "QMtehcs0ZUM"
+  },
+  {
+    title: "Button Pull",
+    emoji: "🔘",
+    description: "Hold the button with your lips and resist pulling.",
+    duration: 60,
+    rounds: 3,
+    videoId: "65tlxqQ4A3A"
+  },
+  {
+    title: "Spoon Hold",
+    emoji: "🥄",
+    description: "Hold a spoon with your lips and breathe through your nose.",
+    duration: 60,
+    rounds: 3,
+    videoId: "J42EMhxFyos"
+  },
+  {
+    title: "Spoon Press",
+    emoji: "🥄",
+    description: "Push your tongue against a spoon and hold.",
+    duration: 60,
+    rounds: 3,
+    videoId: "4SNO61r4Nz8"
+  },
+  {
+    title: "Balloon Blow",
+    emoji: "🎈",
+    description: "Blow a balloon slowly and control your breathing.",
+    duration: 60,
+    rounds: 3,
+    videoId: "vEXx0XMCknk"
+  }
+];
+
+/* ============================================
+   APP STATE
+   ============================================ */
+let state = {
+  mode: 'home',
+  routine: [],
+  currentIdx: 0,
+  currentRound: 0,
+  videoWatched: false,
+  timerInterval: null,
+  timeLeft: 60,
+  completed: [],
+  selected: new Set(),
+  soundOn: true
+};
+
+const app = document.getElementById('app');
+const progressBar = document.getElementById('progressBar');
+const stepLabel = document.getElementById('stepLabel');
+const homeBtn = document.getElementById('homeBtn');
+const soundBtn = document.getElementById('soundBtn');
+
+/* ============================================
+   HOME BUTTON — instant, no popup (#1 fix)
+   ============================================ */
+homeBtn.addEventListener('click', () => {
+  if (state.mode === 'home') return;
+  stopTimer();
+  const v = document.getElementById('localVideoPlayer');
+  if (v) v.pause();
+  state.selected = new Set();
+  renderWelcome();
+});
+
+/* ============================================
+   SOUND TOGGLE (#12)
+   ============================================ */
+soundBtn.addEventListener('click', () => {
+  state.soundOn = !state.soundOn;
+  soundBtn.textContent = state.soundOn ? '🔊' : '🔇';
+  try { navigator.vibrate?.(30); } catch(e) {} // #13 haptic
+});
+
+/* ============================================
+   STORAGE
+   ============================================ */
+function saveProgress() {
+  localStorage.setItem('chrisii_completed', JSON.stringify(state.completed));
+}
+function loadProgress() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('chrisii_completed') || '[]');
+    state.completed = Array.isArray(saved) ? saved : [];
+  } catch(e) { state.completed = []; }
+}
+
+/* ============================================
+   AUDIO CUES (#4 improved)
+   ============================================ */
+let audioCtx = null;
+function playSound(type) {
+  if (!state.soundOn) return; // #12 sound toggle
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = audioCtx;
+    const now = ctx.currentTime;
+
+    if (type === 'ding') {
+      [880, 1320].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.frequency.value = freq;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0.0001, now + i * 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.3, now + i * 0.05 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.05 + 0.4);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(now + i * 0.05);
+        osc.stop(now + i * 0.05 + 0.45);
+      });
+    } else if (type === 'start') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+      osc.type = 'triangle';
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.25, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.25);
+    } else if (type === 'success') {
+      [523, 659, 784, 1047].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const t = now + i * 0.1;
+        osc.frequency.value = freq;
+        osc.type = 'triangle';
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(0.3, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.4);
+      });
+    }
+  } catch(e) {}
+}
+
+/* ============================================
+   HAPTIC FEEDBACK (#13)
+   ============================================ */
+function haptic(ms) {
+  try { navigator.vibrate?.(ms || 30); } catch(e) {}
+}
+
+/* ============================================
+   INFO TOAST
+   ============================================ */
+function showInfoToast(text) {
+  document.querySelectorAll('.info-toast').forEach(t => t.remove());
+  const toast = document.createElement('div');
+  toast.className = 'info-toast';
+  toast.innerHTML = `
+    <div class="toast-content">
+      <p>${text}</p>
+      <button class="toast-close">Got it! 👍</button>
+    </div>
+  `;
+  document.body.appendChild(toast);
+  toast.querySelector('.toast-close').onclick = () => toast.remove();
+  toast.onclick = (e) => { if (e.target === toast) toast.remove(); };
+}
+
+/* ============================================
+   CONFETTI
+   ============================================ */
+function fireConfetti() {
+  const colors = ['#ff6b35', '#f7b733', '#11998e', '#38ef7d', '#4776e6', '#8e54e9', '#ff9aa2'];
+  const container = document.createElement('div');
+  container.className = 'confetti-container';
+  document.body.appendChild(container);
+  for (let i = 0; i < 60; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + '%';
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDelay = Math.random() * 0.5 + 's';
+    piece.style.animationDuration = (2 + Math.random() * 2) + 's';
+    container.appendChild(piece);
+  }
+  setTimeout(() => container.remove(), 5000);
+}
+
+/* ============================================
+   DAILY COUNTER
+   ============================================ */
+function getTodayKey() {
+  const d = new Date();
+  return `chrisii_daily_${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+}
+function getDailyCount() {
+  try { return parseInt(localStorage.getItem(getTodayKey()) || '0'); } catch(e) { return 0; }
+}
+function incrementDailyCount() {
+  const next = getDailyCount() + 1;
+  localStorage.setItem(getTodayKey(), String(next));
+  return next;
+}
+
+/* ============================================
+   STREAK TRACKER (#11)
+   ============================================ */
+function getStreakDays() {
+  let streak = 0;
+  const today = new Date();
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = `chrisii_daily_${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+    try {
+      if (parseInt(localStorage.getItem(key) || '0') > 0) {
+        streak++;
+      } else if (i > 0) { // today can be 0 if he hasn't started yet
+        break;
+      }
+    } catch(e) { break; }
+  }
+  return streak;
+}
+
+/* ============================================
+   VIDEO MODAL (for YouTube fallback)
+   ============================================ */
+function openVideoModal(videoId, title) {
+  const embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&playsinline=1&rel=0&modestbranding=1`;
+  const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
+  const modal = document.createElement('div');
+  modal.className = 'video-modal';
+  modal.innerHTML = `
+    <div class="modal-header">
+      <button class="modal-close" id="closeModal">✕</button>
+      <div class="modal-title">${title}</div>
+      <div style="width:44px;"></div>
+    </div>
+    <iframe class="modal-video" src="${embedUrl}" title="${title}"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+      allowfullscreen playsinline></iframe>
+    <p style="text-align:center; color:#fff; padding:10px; font-size:0.9rem;">
+      Video not playing? <a href="${watchUrl}" target="_blank" rel="noopener" style="color:#ffd43b; font-weight:bold;">Open on YouTube ↗</a>
+    </p>
+  `;
+  document.body.appendChild(modal);
+  document.body.style.overflow = 'hidden';
+  document.getElementById('closeModal').onclick = () => {
+    document.body.removeChild(modal);
+    document.body.style.overflow = '';
+  };
+}
+
+function updateProgress() {
+  if (state.mode === 'home' || state.routine.length === 0) {
+    progressBar.style.width = '0%';
+    stepLabel.textContent = '';
+    return;
+  }
+  const pct = (state.currentIdx / state.routine.length) * 100;
+  progressBar.style.width = pct + '%';
+  stepLabel.textContent = `Exercise ${state.currentIdx + 1} of ${state.routine.length}`;
+}
+
+/* ============================================
+   SCREEN 1: HOME — simple entry point
+   ============================================ */
+function renderWelcome() {
+  stopTimer();
+  state.mode = 'home';
+  state.routine = [];
+  state.currentIdx = 0;
+  state.selected = new Set();
+  progressBar.style.width = '0%';
+  stepLabel.textContent = '';
+
+  const streak = getStreakDays();
+
+  const streakHtml = streak >= 2
+    ? `<div class="streak-badge">🔥 ${streak} day streak!</div>`
+    : '';
+
+  // SVG SpeechUp Logo with American flag background
+  const logo = `
+    <svg viewBox="0 0 360 110" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:400px; height:auto; margin:0 auto; display:block;">
+      <defs>
+        <clipPath id="textClip">
+          <text x="180" y="78" text-anchor="middle" font-family="'Comic Sans MS','Trebuchet MS',system-ui,sans-serif" font-size="64" font-weight="bold">SpeechUp!</text>
+        </clipPath>
+        <pattern id="flagPattern" patternUnits="userSpaceOnUse" width="360" height="110">
+          <rect x="0" y="0" width="360" height="9" fill="#B22234"/>
+          <rect x="0" y="9" width="360" height="9" fill="#fff"/>
+          <rect x="0" y="18" width="360" height="9" fill="#B22234"/>
+          <rect x="0" y="27" width="360" height="9" fill="#fff"/>
+          <rect x="0" y="36" width="360" height="9" fill="#B22234"/>
+          <rect x="0" y="45" width="360" height="9" fill="#fff"/>
+          <rect x="0" y="54" width="360" height="9" fill="#B22234"/>
+          <rect x="0" y="63" width="360" height="9" fill="#fff"/>
+          <rect x="0" y="72" width="360" height="9" fill="#B22234"/>
+          <rect x="0" y="81" width="360" height="9" fill="#fff"/>
+          <rect x="0" y="90" width="360" height="9" fill="#B22234"/>
+          <rect x="0" y="99" width="360" height="11" fill="#fff"/>
+          <rect x="0" y="0" width="145" height="63" fill="#3C3B6E"/>
+          <g fill="#fff" font-size="6" font-family="sans-serif">
+            <text x="12" y="11">★</text><text x="28" y="11">★</text><text x="44" y="11">★</text><text x="60" y="11">★</text><text x="76" y="11">★</text><text x="92" y="11">★</text>
+            <text x="20" y="22">★</text><text x="36" y="22">★</text><text x="52" y="22">★</text><text x="68" y="22">★</text><text x="84" y="22">★</text>
+            <text x="12" y="33">★</text><text x="28" y="33">★</text><text x="44" y="33">★</text><text x="60" y="33">★</text><text x="76" y="33">★</text><text x="92" y="33">★</text>
+            <text x="20" y="44">★</text><text x="36" y="44">★</text><text x="52" y="44">★</text><text x="68" y="44">★</text><text x="84" y="44">★</text>
+            <text x="12" y="55">★</text><text x="28" y="55">★</text><text x="44" y="55">★</text><text x="60" y="55">★</text><text x="76" y="55">★</text><text x="92" y="55">★</text>
+          </g>
+        </pattern>
+        <filter id="logoGlow">
+          <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#f7b733" flood-opacity="0.7"/>
+        </filter>
+      </defs>
+      <g clip-path="url(#textClip)">
+        <rect x="0" y="0" width="360" height="110" fill="url(#flagPattern)"/>
+      </g>
+      <text x="180" y="78" text-anchor="middle" font-family="'Comic Sans MS','Trebuchet MS',system-ui,sans-serif" font-size="64" font-weight="bold"
+        fill="none" stroke="#f7b733" stroke-width="3" filter="url(#logoGlow)">SpeechUp!</text>
+    </svg>
+  `;
+
+  // SVG Mascot
+  const mascot = `
+    <svg viewBox="0 0 200 240" xmlns="http://www.w3.org/2000/svg" style="width:140px; height:auto; margin:8px auto; display:block;">
+      <defs>
+        <radialGradient id="mascotBody" cx="45%" cy="35%" r="60%">
+          <stop offset="0%" stop-color="#5bc0de"/>
+          <stop offset="100%" stop-color="#1a8ccc"/>
+        </radialGradient>
+        <radialGradient id="capeGrad" cx="50%" cy="30%" r="70%">
+          <stop offset="0%" stop-color="#f7b733"/>
+          <stop offset="100%" stop-color="#ff6b35"/>
+        </radialGradient>
+      </defs>
+      <style>
+        .mascot-tongue {
+          transform-origin: 100px 155px;
+          animation: mascotTongue 4s ease-in-out infinite;
+        }
+        @keyframes mascotTongue {
+          0%   { transform: translateX(0) scaleX(1); }
+          10%  { transform: translateX(0) scaleX(1); }
+          25%  { transform: translateX(-16px) scaleX(1.3) rotate(-10deg); }
+          40%  { transform: translateX(-16px) scaleX(1.3) rotate(-10deg); }
+          50%  { transform: translateX(0) scaleX(1.6); }
+          60%  { transform: translateX(0) scaleX(1.6); }
+          75%  { transform: translateX(16px) scaleX(1.3) rotate(10deg); }
+          90%  { transform: translateX(16px) scaleX(1.3) rotate(10deg); }
+          100% { transform: translateX(0) scaleX(1); }
+        }
+        .mascot-eyes {
+          animation: mascotBlink 5s infinite;
+        }
+        @keyframes mascotBlink {
+          0%, 90%, 100% { transform: scaleY(1); }
+          93%, 97% { transform: scaleY(0.1); }
+        }
+        .mascot-bob {
+          animation: mascotBob 3s ease-in-out infinite;
+        }
+        @keyframes mascotBob {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-5px); }
+        }
+      </style>
+      <g class="mascot-bob">
+        <path d="M 58 120 Q 35 190 50 225 L 100 200 L 150 225 Q 165 190 142 120 Z" fill="url(#capeGrad)" opacity="0.85"/>
+        <ellipse cx="100" cy="130" rx="52" ry="62" fill="url(#mascotBody)" stroke="#1280b3" stroke-width="2"/>
+        <ellipse cx="90" cy="115" rx="20" ry="28" fill="#7dd3ed" opacity="0.35"/>
+        <polygon points="96,108 106,108 102,120 110,120 94,140 98,126 90,126" fill="#ffd43b" stroke="#f7b733" stroke-width="1"/>
+        <g transform="translate(40,118) rotate(-25)">
+          <rect x="-7" y="-24" width="14" height="28" rx="7" fill="#1a8ccc" stroke="#1280b3" stroke-width="1.5"/>
+          <ellipse cx="0" cy="-27" rx="10" ry="8" fill="#1a8ccc" stroke="#1280b3" stroke-width="1.5"/>
+        </g>
+        <g transform="translate(160,118) rotate(25)">
+          <rect x="-7" y="-24" width="14" height="28" rx="7" fill="#1a8ccc" stroke="#1280b3" stroke-width="1.5"/>
+          <ellipse cx="0" cy="-27" rx="10" ry="8" fill="#1a8ccc" stroke="#1280b3" stroke-width="1.5"/>
+        </g>
+        <g class="mascot-eyes" style="transform-origin:100px 105px;">
+          <ellipse cx="80" cy="105" rx="11" ry="13" fill="#fff"/>
+          <ellipse cx="120" cy="105" rx="11" ry="13" fill="#fff"/>
+          <circle cx="83" cy="107" r="6" fill="#1a2a44"/>
+          <circle cx="123" cy="107" r="6" fill="#1a2a44"/>
+          <circle cx="85" cy="104" r="2.5" fill="#fff"/>
+          <circle cx="125" cy="104" r="2.5" fill="#fff"/>
+        </g>
+        <path d="M 68 93 Q 80 87 92 93" stroke="#0d5f8a" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <path d="M 108 93 Q 120 87 132 93" stroke="#0d5f8a" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <ellipse cx="100" cy="145" rx="24" ry="15" fill="#0a3a5a"/>
+        <rect x="80" y="133" width="40" height="7" rx="2" fill="#fff" opacity="0.95"/>
+        <g class="mascot-tongue">
+          <ellipse cx="100" cy="156" rx="12" ry="9" fill="#ff6b8a" stroke="#c43a5f" stroke-width="1.5"/>
+          <ellipse cx="98" cy="153" rx="4" ry="2" fill="#ff9eb5" opacity="0.6"/>
+        </g>
+        <polygon points="62,82 70,55 84,72 100,42 116,72 130,55 138,82" fill="#ffd43b" stroke="#f7b733" stroke-width="2"/>
+        <circle cx="100" cy="57" r="4.5" fill="#ff6b35"/>
+        <circle cx="82" cy="66" r="3" fill="#ff6b35"/>
+        <circle cx="118" cy="66" r="3" fill="#ff6b35"/>
+      </g>
+    </svg>
+  `;
+
+  app.innerHTML = `
+    <div style="text-align:center;">
+      ${logo}
+      ${mascot}
+      ${streakHtml}
+    </div>
+
+    <button class="btn btn-success" id="goToPick" style="margin-top:10px; padding:22px; font-size:1.4rem;">
+      🚀 Step 1: Let's Go!
+    </button>
+
+    ${state.completed.length > 0 ? `
+      <button class="btn btn-neutral" id="resetProgress" style="margin-top:6px; font-size:0.95rem;">🗑️ Reset Stars</button>
+    ` : ''}
+  `;
+
+  document.getElementById('goToPick').onclick = () => { haptic(); renderPick(); };
+  const reset = document.getElementById('resetProgress');
+  if (reset) reset.onclick = () => {
+    if (confirm("Clear all your stars?")) {
+      state.completed = [];
+      saveProgress();
+      renderWelcome();
+    }
+  };
+}
+
+/* ============================================
+   SCREEN 2: PICK EXERCISES
+   ============================================ */
+function renderPick() {
+  state.mode = 'pick';
+  progressBar.style.width = '0%';
+  stepLabel.textContent = 'Pick Exercises';
+
+  const cards = exercises.map((ex, i) => {
+    const done = state.completed.includes(ex.title);
+    const picked = state.selected.has(i);
+    const hasVideo = !!ex.localVideo;
+    return `
+      <button class="ex-card ${done ? 'completed' : ''} ${picked ? 'picked' : ''}" data-idx="${i}">
+        ${done ? '<span class="badge">⭐</span>' : ''}
+        ${picked ? '<span class="check-badge">✓</span>' : ''}
+        <span class="emoji">${ex.emoji}</span>
+        ${ex.title}
+      </button>
+    `;
+  }).join('');
+
+  const count = state.selected.size;
+
+  app.innerHTML = `
+    <h2><span style="color:#ff6b35;">Step 2:</span> <span style="color:#4776e6;">What do you want to work on?</span></h2>
+    <p style="font-size:1rem; margin-bottom:10px;">Tap to pick, then tap <strong style="color:#11998e;">Go!</strong></p>
+
+    <div class="ex-grid">${cards}</div>
+
+    <button class="btn btn-success" id="goBtn" ${count === 0 ? 'disabled' : ''}>
+      ${count === 0 ? '👆 Pick at least 1' : `<span style="color:#ffd43b;">Step 3:</span> Go! (${count}) 🚀`}
+    </button>
+
+    <button class="btn btn-neutral" id="backHome">⬅️ Back</button>
+  `;
+
+  document.querySelectorAll('.ex-card').forEach(card => {
+    card.onclick = () => {
+      haptic();
+      const idx = parseInt(card.dataset.idx);
+      if (state.selected.has(idx)) state.selected.delete(idx);
+      else state.selected.add(idx);
+      renderPick();
+    };
+  });
+
+  document.getElementById('goBtn').onclick = () => {
+    if (state.selected.size === 0) return;
+    haptic();
+    const picked = [...state.selected].sort((a,b) => a-b).map(i => exercises[i]);
+    state.routine = picked;
+    state.currentIdx = 0;
+    state.mode = 'routine';
+    renderGetReady();
+  };
+
+  document.getElementById('backHome').onclick = () => { state.selected = new Set(); renderWelcome(); };
+}
+
+/* ============================================
+   SCREEN 3: GET READY — preview first exercise (#1 new)
+   ============================================ */
+function renderGetReady() {
+  const ex = state.routine[state.currentIdx];
+  updateProgress();
+
+  app.innerHTML = `
+    <h1 class="pop"><span style="color:#ff6b35;">Step 3:</span> <span style="color:#11998e;">Get Ready!</span></h1>
+    <p style="font-size:1.2rem; margin:14px 0;">
+      Exercise ${state.currentIdx + 1} of ${state.routine.length}
+    </p>
+    <div style="font-size:4rem; text-align:center; margin:10px 0;" class="bounce">${ex.emoji}</div>
+    <h2>${ex.title}</h2>
+    <p style="font-size:1rem; margin:10px 0; opacity:0.9;">${ex.description}</p>
+
+    <button class="btn btn-success" id="startEx" style="margin-top:16px;">▶️ Start!</button>
+    <button class="btn btn-neutral" id="backToPick">⬅️ Change Exercises</button>
+  `;
+
+  document.getElementById('startEx').onclick = () => {
+    haptic();
+    playSound('start');
+    state.currentRound = 0;
+    renderExercise();
+  };
+  document.getElementById('backToPick').onclick = renderPick;
+}
+
+/* ============================================
+   SCREEN 4: EXERCISE — Follow-Along Mode
+   With rewind/forward (#3), anti-cheat (#6)
+   ============================================ */
+function renderExercise() {
+  stopTimer();
+  const ex = state.routine[state.currentIdx];
+  if (!ex) { renderFinal(); return; }
+
+  state.currentRound = 0;
+  state.timeLeft = ex.duration;
+  updateProgress();
+
+  let videoBlock;
+  if (ex.localVideo) {
+    videoBlock = `
+      <div class="local-video-wrap">
+        <video
+          id="localVideoPlayer"
+          class="local-video"
+          src="${ex.localVideo}"
+          playsinline
+          preload="metadata">
+        </video>
+      </div>
+    `;
+  } else {
+    const thumbUrl = `https://img.youtube.com/vi/${ex.videoId}/hqdefault.jpg`;
+    videoBlock = `
+      <div class="video-thumb" id="videoThumb">
+        <img src="${thumbUrl}" alt="${ex.title} video" />
+        <div class="play-overlay">
+          <div class="play-circle">▶</div>
+          <div class="play-label">Tap to Watch Video</div>
+        </div>
+      </div>
+    `;
+  }
+
+  app.innerHTML = `
+    <div class="exercise-header">
+      <h2 class="pop">${ex.emoji} ${ex.title}</h2>
+      <button class="info-btn" id="infoBtn">ℹ️</button>
+    </div>
+
+    ${videoBlock}
+
+    <div class="round-counter" id="roundCounter">
+      <span id="roundLabel">Tap ▶️ Play to start!</span>
+      <div class="rounds">
+        ${[0,1,2].map(i => `<div class="round-dot" id="dot${i}">${i+1}</div>`).join('')}
+      </div>
+    </div>
+
+    ${ex.localVideo ? `
+      <div class="video-controls">
+        <button class="vc-btn vc-play" id="vcPlay">▶️<br><span>Play</span></button>
+        <button class="vc-btn vc-stop" id="vcStop">⏸️<br><span>Stop</span></button>
+        <button class="vc-btn vc-repeat" id="vcRepeat" disabled>🔁<br><span>Again</span></button>
+      </div>
+      <div class="scrub-controls">
+        <button class="scrub-btn" id="scrubBack">⏪ -10s</button>
+        <button class="scrub-btn" id="scrubFwd">⏩ +10s</button>
+      </div>
+      <p class="hint" id="hint">Tap <strong>Play</strong> and do it with them!</p>
+    ` : ''}
+
+    <button class="btn btn-secondary" id="soloMode">🎯 Do It On My Own (Timer)</button>
+    <button class="btn btn-neutral" id="backBtn">⬅️ Back</button>
+  `;
+
+  document.getElementById('infoBtn').onclick = () => showInfoToast(ex.description);
+
+  const thumb = document.getElementById('videoThumb');
+  if (thumb) thumb.onclick = () => openVideoModal(ex.videoId, ex.title);
+
+  if (ex.localVideo) {
+    const video = document.getElementById('localVideoPlayer');
+    const playBtn = document.getElementById('vcPlay');
+    const stopBtn = document.getElementById('vcStop');
+    const repeatBtn = document.getElementById('vcRepeat');
+    const hint = document.getElementById('hint');
+    let roundStartTime = 0; // anti-cheat: track when round started (#6)
+
+    playBtn.onclick = () => {
+      haptic();
+      video.play();
+      if (state.currentRound === 0) {
+        state.currentRound = 1;
+        roundStartTime = Date.now();
+        updateRoundDisplay();
+        playSound('start');
+        // Enable Again button after 15 seconds (anti-cheat #6)
+        setTimeout(() => { repeatBtn.disabled = false; }, 15000);
+      }
+      hint.textContent = "Copy what they do! 💪";
+    };
+
+    stopBtn.onclick = () => {
+      haptic();
+      video.pause();
+      hint.textContent = "Paused. Tap Play when ready.";
+    };
+
+    repeatBtn.onclick = () => {
+      haptic();
+      video.currentTime = 0;
+      video.play();
+      if (state.currentRound < ex.rounds) {
+        state.currentRound++;
+        roundStartTime = Date.now();
+        updateRoundDisplay();
+        playSound('ding');
+        // Disable Again until 15 sec into the new round (#6)
+        repeatBtn.disabled = true;
+        setTimeout(() => { repeatBtn.disabled = false; }, 15000);
+      }
+      if (state.currentRound >= ex.rounds) {
+        // Last round — Again becomes disabled, completion triggers on video end
+        repeatBtn.disabled = true;
+        hint.textContent = `Last round! Finish strong! 🔥`;
+      } else {
+        hint.textContent = `Round ${state.currentRound}! You got this! 🔥`;
+      }
+    };
+
+    video.onended = () => {
+      if (state.currentRound >= ex.rounds) {
+        playSound('success');
+        finishFollowAlong();
+      } else {
+        playSound('ding');
+        repeatBtn.disabled = false; // allow Again when video ends
+        hint.innerHTML = `Nice! Tap <strong>🔁 Again</strong> for round ${state.currentRound + 1}`;
+      }
+    };
+
+    // Rewind / Fast Forward (#3)
+    document.getElementById('scrubBack').onclick = () => {
+      haptic(20);
+      video.currentTime = Math.max(0, video.currentTime - 10);
+    };
+    document.getElementById('scrubFwd').onclick = () => {
+      haptic(20);
+      video.currentTime = Math.min(video.duration, video.currentTime + 10);
+    };
+  }
+
+  document.getElementById('soloMode').onclick = () => {
+    haptic();
+    state.currentRound = 0;
+    startRound();
+  };
+
+  document.getElementById('backBtn').onclick = goBack;
+}
+
+/* Update round dots display */
+function updateRoundDisplay() {
+  const ex = state.routine[state.currentIdx];
+  const label = document.getElementById('roundLabel');
+  if (label) {
+    if (state.currentRound === 0) {
+      label.textContent = `Ready! Tap Play to start`;
+    } else if (state.currentRound > ex.rounds) {
+      label.textContent = `Done! 🎉`;
+    } else {
+      label.textContent = `Round ${state.currentRound} of ${ex.rounds}`;
+    }
+  }
+  for (let i = 0; i < ex.rounds; i++) {
+    const dot = document.getElementById('dot' + i);
+    if (!dot) continue;
+    dot.classList.remove('done', 'active');
+    if (i < state.currentRound - 1 || state.currentRound > ex.rounds) {
+      dot.classList.add('done');
+      dot.textContent = '✓';
+    } else if (i === state.currentRound - 1) {
+      dot.classList.add('active');
+    } else {
+      dot.textContent = i + 1;
+    }
+  }
+}
+
+/* Follow-along completion */
+function finishFollowAlong() {
+  const ex = state.routine[state.currentIdx];
+  if (!state.completed.includes(ex.title)) {
+    state.completed.push(ex.title);
+    saveProgress();
+  }
+  incrementDailyCount();
+  fireConfetti();
+  haptic(100);
+  renderExerciseComplete();
+}
+
+/* ============================================
+   SOLO TIMER MODE (Do It On My Own)
+   ============================================ */
+function startRound() {
+  const ex = state.routine[state.currentIdx];
+  state.timeLeft = ex.duration;
+
+  app.innerHTML = `
+    <h2 class="pop">${ex.emoji} ${ex.title}</h2>
+    <p style="font-size:1.3rem; margin: 10px 0;">Round ${state.currentRound + 1} of ${ex.rounds}</p>
+
+    <div class="timer-container">
+      <div class="timer-circle">
+        <svg viewBox="0 0 200 200">
+          <circle class="bg-ring" cx="100" cy="100" r="88"></circle>
+          <circle class="progress-ring" id="progressRing" cx="100" cy="100" r="88"
+            stroke-dasharray="552.92" stroke-dashoffset="0"></circle>
+        </svg>
+        <div class="timer-text" id="timerText">${ex.duration}</div>
+      </div>
+    </div>
+
+    <div class="rounds">
+      ${[0,1,2].map(i => {
+        let cls = 'round-dot';
+        if (i < state.currentRound) cls += ' done';
+        if (i === state.currentRound) cls += ' active';
+        return `<div class="${cls}">${i < state.currentRound ? '✓' : i+1}</div>`;
+      }).join('')}
+    </div>
+
+    <p style="text-align:center; font-size:1.2rem; margin-top:10px; color:#11998e; font-weight:bold;">You're doing great! 💪</p>
+    <button class="btn btn-neutral" id="cancelRound">⏹️ Stop Round</button>
+  `;
+
+  document.getElementById('cancelRound').onclick = () => {
+    stopTimer();
+    renderExercise();
+  };
+
+  const ring = document.getElementById('progressRing');
+  const timerText = document.getElementById('timerText');
+  const totalDash = 552.92;
+  const total = ex.duration;
+
+  state.timerInterval = setInterval(() => {
+    state.timeLeft--;
+    timerText.textContent = state.timeLeft;
+    const offset = totalDash * (1 - state.timeLeft / total);
+    ring.style.strokeDashoffset = offset;
+
+    if (state.timeLeft <= 0) {
+      stopTimer();
+      onRoundComplete();
+    }
+  }, 1000);
+}
+
+function stopTimer() {
+  if (state.timerInterval) {
+    clearInterval(state.timerInterval);
+    state.timerInterval = null;
+  }
+}
+
+function onRoundComplete() {
+  const ex = state.routine[state.currentIdx];
+  state.currentRound++;
+  playSound('ding');
+  haptic(50);
+
+  if (state.currentRound >= ex.rounds) {
+    if (!state.completed.includes(ex.title)) {
+      state.completed.push(ex.title);
+      saveProgress();
+    }
+    incrementDailyCount();
+    playSound('success');
+    fireConfetti();
+    haptic(100);
+    renderExerciseComplete();
+  } else {
+    renderRoundComplete();
+  }
+}
+
+function renderRoundComplete() {
+  app.innerHTML = `
+    <h1 class="pop">🎉 <span style="color:#4776e6;">Round</span> <span style="color:#f7b733;">Complete!</span></h1>
+    <p style="font-size:1.5rem; margin: 20px 0;">Nice job!</p>
+    <div style="font-size:5rem; text-align:center;" class="bounce">⭐</div>
+
+    <div class="rounds" style="margin: 20px 0;">
+      ${[0,1,2].map(i => {
+        let cls = 'round-dot';
+        if (i < state.currentRound) cls += ' done';
+        return `<div class="${cls}">${i < state.currentRound ? '✓' : i+1}</div>`;
+      }).join('')}
+    </div>
+
+    <p style="text-align:center; margin: 14px 0;">Get ready for round ${state.currentRound + 1}!</p>
+    <button class="btn btn-success" id="nextRound">▶️ Start Round ${state.currentRound + 1}</button>
+  `;
+  document.getElementById('nextRound').onclick = () => { haptic(); startRound(); };
+}
+
+/* ============================================
+   SCREEN 5: EXERCISE COMPLETE — previews next (#2)
+   ============================================ */
+function renderExerciseComplete() {
+  const ex = state.routine[state.currentIdx];
+  const isLast = state.currentIdx >= state.routine.length - 1;
+  const nextEx = isLast ? null : state.routine[state.currentIdx + 1];
+
+  app.innerHTML = `
+    <h1 class="pop">🎉 <span style="color:#11998e;">Nice</span> <span style="color:#ff6b35;">Job!</span></h1>
+    <p style="font-size:1.3rem; margin: 10px 0;">⭐ ${ex.title} — Done!</p>
+    <div style="font-size:4rem; text-align:center;" class="bounce">🌟</div>
+
+    ${isLast ? `
+      <p style="font-size:1.2rem; margin: 16px 0;">That was your last exercise!</p>
+      <button class="btn btn-success" id="nextEx">🎊 See My Results!</button>
+    ` : `
+      <div style="background:rgba(255,255,255,0.5); border-radius:14px; padding:14px; margin:16px 0; text-align:center;">
+        <p style="font-size:1rem; margin-bottom:8px;">Up next:</p>
+        <p style="font-size:2rem; margin-bottom:4px;">${nextEx.emoji}</p>
+        <p style="font-size:1.2rem; font-weight:bold;">${nextEx.title}</p>
+      </div>
+      <button class="btn btn-success" id="nextEx">▶️ Next Exercise</button>
+    `}
+    <button class="btn btn-neutral" id="backHome">🏠 I'm Done</button>
+  `;
+
+  document.getElementById('nextEx').onclick = () => {
+    haptic();
+    state.currentIdx++;
+    if (state.currentIdx >= state.routine.length) {
+      renderFinal();
+    } else {
+      renderGetReady(); // Go through Get Ready screen for next exercise
+    }
+  };
+  document.getElementById('backHome').onclick = () => {
+    state.selected = new Set();
+    renderWelcome();
+  };
+}
+
+/* ============================================
+   NAVIGATION
+   ============================================ */
+function goBack() {
+  if (state.currentIdx === 0) {
+    renderGetReady();
+    return;
+  }
+  state.currentIdx--;
+  renderGetReady();
+}
+
+/* ============================================
+   FINAL SCREEN
+   ============================================ */
+function renderFinal() {
+  progressBar.style.width = '100%';
+  stepLabel.textContent = 'Done!';
+  playSound('success');
+  fireConfetti();
+  setTimeout(fireConfetti, 800);
+  haptic(200);
+
+  const streak = getStreakDays();
+
+  app.innerHTML = `
+    <h1 class="pop">🎊 <span style="color:#ff6b35;">Amazing</span> <span style="color:#4776e6;">Job,</span> <span style="color:#11998e;">Champion!</span></h1>
+    <p style="font-size:1.3rem; margin: 14px 0; color:#4776e6; font-weight:bold;">You completed your training!</p>
+    <div style="font-size:5rem; text-align:center;" class="bounce">🏆</div>
+
+    <div class="daily-counter" style="margin:16px 0;">
+      <span class="dc-label">Today:</span>
+      <span class="dc-num">${getDailyCount()}</span>
+      <span class="dc-suffix">exercises done 🔥</span>
+    </div>
+
+    ${streak >= 2 ? `<div class="streak-badge">🔥 ${streak} day streak!</div>` : ''}
+
+    <div class="ex-grid">
+      ${state.routine.map(ex => `
+        <div class="ex-card completed">
+          <span class="badge">⭐</span>
+          <span class="emoji">${ex.emoji}</span>
+          ${ex.title}
+        </div>
+      `).join('')}
+    </div>
+
+    <button class="btn btn-primary" id="goHome">🏠 Back to Home</button>
+    <button class="btn btn-secondary" id="doAgain">🔄 Do It Again</button>
+  `;
+
+  document.getElementById('goHome').onclick = () => {
+    state.selected = new Set();
+    renderWelcome();
+  };
+  document.getElementById('doAgain').onclick = () => {
+    state.currentIdx = 0;
+    state.currentRound = 0;
+    state.mode = 'routine';
+    renderGetReady();
+  };
+}
+
+/* ============================================
+   INIT
+   ============================================ */
+loadProgress();
+document.getElementById('buildBadge').textContent = `Build ${BUILD_NUMBER} • ${BUILD_DATE}`;
+renderWelcome();
+</script>
+</body>
+</html>
