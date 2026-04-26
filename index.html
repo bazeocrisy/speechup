@@ -514,7 +514,7 @@
 /* ============================================
    BUILD INFO
    ============================================ */
-const BUILD_NUMBER = "v2.5";
+const BUILD_NUMBER = "v2.7";
 const BUILD_DATE = "Apr 14, 2026";
 
 /* ============================================
@@ -1026,7 +1026,7 @@ function renderPick() {
       ${count === 0 ? '👆 Pick at least 1' : `<span style="color:#ffd43b;">Step 3:</span> Go! (${count}) 🚀`}
     </button>
 
-    <button class="btn btn-neutral" id="backHome">⬅️ Back</button>
+    <button class="btn btn-neutral" id="backHome">🏠 Home</button>
   `;
 
   document.querySelectorAll('.ex-card').forEach(card => {
@@ -1106,6 +1106,9 @@ function renderExercise() {
           preload="metadata">
         </video>
       </div>
+      <div id="videoTime" style="text-align:center; font-size:1.1rem; font-weight:bold; margin:4px 0; color:#1a2a44; opacity:0.8;">
+        ⏱️ <span id="currentTime">0:00</span> / <span id="totalTime">--:--</span>
+      </div>
     `;
   } else {
     const thumbUrl = `https://img.youtube.com/vi/${ex.videoId}/hqdefault.jpg`;
@@ -1149,7 +1152,7 @@ function renderExercise() {
     ` : ''}
 
     <button class="btn btn-secondary" id="soloMode">🎯 Do It On My Own (Timer)</button>
-    <button class="btn btn-neutral" id="backBtn">⬅️ Back</button>
+    <button class="btn btn-neutral" id="backBtn">🏠 Home</button>
   `;
 
   document.getElementById('infoBtn').onclick = () => showInfoToast(ex.description);
@@ -1163,7 +1166,23 @@ function renderExercise() {
     const stopBtn = document.getElementById('vcStop');
     const repeatBtn = document.getElementById('vcRepeat');
     const hint = document.getElementById('hint');
+    const currentTimeEl = document.getElementById('currentTime');
+    const totalTimeEl = document.getElementById('totalTime');
     let roundStartTime = 0; // anti-cheat: track when round started (#6)
+
+    // Format seconds to m:ss
+    function fmtTime(s) {
+      if (!s || isNaN(s)) return '--:--';
+      const m = Math.floor(s / 60);
+      const sec = Math.floor(s % 60);
+      return m + ':' + (sec < 10 ? '0' : '') + sec;
+    }
+
+    // Show total duration once video metadata loads
+    video.onloadedmetadata = () => { totalTimeEl.textContent = fmtTime(video.duration); };
+
+    // Update current time as video plays
+    video.ontimeupdate = () => { currentTimeEl.textContent = fmtTime(video.currentTime); };
 
     playBtn.onclick = () => {
       haptic();
@@ -1235,7 +1254,13 @@ function renderExercise() {
     startRound();
   };
 
-  document.getElementById('backBtn').onclick = goBack;
+  document.getElementById('backBtn').onclick = () => {
+    stopTimer();
+    const v = document.getElementById('localVideoPlayer');
+    if (v) v.pause();
+    state.selected = new Set();
+    renderWelcome();
+  };
 }
 
 /* Update round dots display */
