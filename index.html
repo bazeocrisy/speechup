@@ -514,7 +514,7 @@
 /* ============================================
    BUILD INFO
    ============================================ */
-const BUILD_NUMBER = "v2.7";
+const BUILD_NUMBER = "v2.8";
 const BUILD_DATE = "Apr 14, 2026";
 
 /* ============================================
@@ -1097,7 +1097,7 @@ function renderExercise() {
   let videoBlock;
   if (ex.localVideo) {
     videoBlock = `
-      <div class="local-video-wrap">
+      <div class="local-video-wrap" style="position:relative;">
         <video
           id="localVideoPlayer"
           class="local-video"
@@ -1105,6 +1105,10 @@ function renderExercise() {
           playsinline
           preload="metadata">
         </video>
+        <div id="videoOverlay" style="position:absolute; inset:0; background:rgba(0,0,0,0.5); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; cursor:pointer; border-radius:16px;">
+          <div style="width:70px; height:70px; border-radius:50%; background:linear-gradient(135deg,#11998e,#38ef7d); display:flex; align-items:center; justify-content:center; font-size:2rem; color:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.4); padding-left:5px;">▶</div>
+          <div style="color:#fff; font-weight:bold; font-size:1.1rem; text-shadow:1px 1px 4px rgba(0,0,0,0.8);">Tap Play to Start</div>
+        </div>
       </div>
       <div id="videoTime" style="text-align:center; font-size:1.1rem; font-weight:bold; margin:4px 0; color:#1a2a44; opacity:0.8;">
         ⏱️ <span id="currentTime">0:00</span> / <span id="totalTime">--:--</span>
@@ -1184,9 +1188,26 @@ function renderExercise() {
     // Update current time as video plays
     video.ontimeupdate = () => { currentTimeEl.textContent = fmtTime(video.currentTime); };
 
+    // Hide the "tap play" overlay when video starts
+    const overlay = document.getElementById('videoOverlay');
+    overlay.onclick = () => {
+      haptic();
+      video.play();
+      overlay.style.display = 'none';
+      if (state.currentRound === 0) {
+        state.currentRound = 1;
+        roundStartTime = Date.now();
+        updateRoundDisplay();
+        playSound('start');
+        setTimeout(() => { repeatBtn.disabled = false; }, 15000);
+      }
+      hint.textContent = "Copy what they do! 💪";
+    };
+
     playBtn.onclick = () => {
       haptic();
       video.play();
+      overlay.style.display = 'none';
       if (state.currentRound === 0) {
         state.currentRound = 1;
         roundStartTime = Date.now();
@@ -1208,6 +1229,7 @@ function renderExercise() {
       haptic();
       video.currentTime = 0;
       video.play();
+      overlay.style.display = 'none';
       if (state.currentRound < ex.rounds) {
         state.currentRound++;
         roundStartTime = Date.now();
